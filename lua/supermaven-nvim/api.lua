@@ -23,6 +23,10 @@ M.start = function()
   listener.setup()
 end
 
+M.is_file_ignored = function(filepath)
+  return binary:check_ignore_file(filepath)
+end
+
 M.stop = function()
   vim.g.SUPERMAVEN_DISABLED = 1
   if not M.is_running() then

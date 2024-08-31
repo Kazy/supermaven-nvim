@@ -4,7 +4,30 @@ local config = require("supermaven-nvim.config")
 
 local M = {
   augroup = nil,
+  _file_cache = {},
+  api = nil
 }
+
+M.get_api = function()
+  if M.api == nil then
+    local ok, api = pcall(require, "supermaven-nvim.api")
+    if not ok then
+      return nil
+    end
+    M.api = api
+  end
+  return M.api
+end
+
+M.check_file_ignored = function(filepath)
+  local ignore_file = M._file_cache[filepath]
+  if ignore_file == nil then
+    ignore_file = M.api.is_file_ignored(filepath)
+    M._file_cache[filepath] = ignore_file
+  end
+
+  return ignore_file
+end
 
 M.setup = function()
   M.augroup = vim.api.nvim_create_augroup("supermaven", { clear = true })
@@ -17,14 +40,20 @@ M.setup = function()
       if not file_name or not buffer then
         return
       end
+      if M.get_api() == nil then
+        return
+      end
+      if M.check_file_ignored(event["file"]) then
+        return
+      end
       binary:on_update(buffer, file_name, "text_changed")
     end,
   })
 
   vim.api.nvim_create_autocmd({ "BufEnter" }, {
-    callback = function(_)
-      local ok, api = pcall(require, "supermaven-nvim.api")
-      if not ok then
+    callback = function(event)
+      local api = M.get_api()
+      if api == nil then
         return
       end
       if config.condition() or vim.g.SUPERMAVEN_DISABLED == 1 then
@@ -32,12 +61,15 @@ M.setup = function()
           api.stop()
           return
         end
+      elseif M.check_file_ignored(event["file"]) then
+        return
       else
         if api.is_running() then
           return
         end
         api.start()
       end
+      M.api.start()
     end,
   })
 
@@ -47,6 +79,12 @@ M.setup = function()
       local file_name = event["file"]
       local buffer = event["buf"]
       if not file_name or not buffer then
+        return
+      end
+      if M.get_api() == nil then
+        return
+      end
+      if M.check_file_ignored(event["file"]) then
         return
       end
       binary:on_update(buffer, file_name, "cursor")

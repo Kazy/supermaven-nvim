@@ -35,6 +35,11 @@ timer:start(
   end)
 )
 
+function BinaryLifecycle:check_ignore_file(filepath)
+  local out = vim.system({ "git", "check-ignore", filepath }):wait()
+  return out.code == 0
+end
+
 function BinaryLifecycle:start_binary()
   self.stdin = loop.new_pipe(false)
   self.stdout = loop.new_pipe(false)
@@ -127,9 +132,9 @@ function BinaryLifecycle:same_context(context)
     return false
   end
   return context.cursor[1] == self.last_context.cursor[1]
-    and context.cursor[2] == self.last_context.cursor[2]
-    and context.file_name == self.last_context.file_name
-    and context.document_text == self.last_context.document_text
+      and context.cursor[2] == self.last_context.cursor[2]
+      and context.file_name == self.last_context.file_name
+      and context.document_text == self.last_context.document_text
 end
 
 function BinaryLifecycle:read_loop()
