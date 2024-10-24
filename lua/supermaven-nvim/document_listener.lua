@@ -57,10 +57,7 @@ M.setup = function()
         return
       end
       if config.condition() or vim.g.SUPERMAVEN_DISABLED == 1 then
-        if api.is_running() then
-          api.stop()
-          return
-        end
+        return
       elseif M.check_file_ignored(event["file"]) then
         return
       else
@@ -82,6 +79,9 @@ M.setup = function()
         return
       end
       if M.get_api() == nil then
+        return
+      end
+      if config.condition() or vim.g.SUPERMAVEN_DISABLED == 1 then
         return
       end
       if M.check_file_ignored(event["file"]) then
